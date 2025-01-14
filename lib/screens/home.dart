@@ -28,8 +28,8 @@ class HomeScreen extends ConsumerWidget {
       ProfileTab(storage: storage),
     ];
 
-    // Get the count of cart items
-    final cartItemCount = ref.watch(cartProvider).length; // Get the length of the list
+    // Count of cart items
+    final cartItemCount = ref.watch(cartProvider).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -46,7 +46,7 @@ class HomeScreen extends ConsumerWidget {
                   Navigator.pushNamed(context, '/cart');
                 },
               ),
-              if (cartItemCount > 0) // Check if there are any items in the cart
+              if (cartItemCount > 0)
                 Positioned(
                   right: 8,
                   top: 8,
@@ -127,7 +127,7 @@ class HomeTab extends StatelessWidget {
 
           SizedBox(height: 16),
 
-          // Promotional banners
+          // Banners
           SizedBox(
             height: 200,
             child: PageView(
@@ -151,7 +151,7 @@ class HomeTab extends StatelessWidget {
 
           SizedBox(height: 24),
 
-          // Add Review Button
+          // Review Button
           Center(
             child: ElevatedButton(
               onPressed: () {
@@ -453,28 +453,37 @@ class SupermarketsTab extends StatelessWidget {
           return Scaffold(
             body: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-                    decoration: BoxDecoration(
-                      color: Colors.purple[200],
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    width: double.infinity,
-                    height: 125,
-                    child: Text(
-                      'Supermarkets',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                Stack(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: 175,
+                      child: Image.asset(
+                        'images/supermarket.jpeg',
+                        fit: BoxFit.cover,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                  ),
+                    Container(
+                      width: double.infinity,
+                      height: 175,
+                      color: Colors.black.withOpacity(0.3),
+                    ),
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Supermarkets',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                // Grid view of supermarkets
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.all(16.0),
@@ -499,60 +508,50 @@ class SupermarketsTab extends StatelessWidget {
                         child: Card(
                           elevation: 8.0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16.0),
-                            child: Stack(
-                              fit: StackFit.expand,
+                          color: Colors.purple[100], // Solid light purple color
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Image.asset(
-                                  'images/supermarket.jpeg', // Background image for each card
-                                  fit: BoxFit.cover,
+                                Text(
+                                  supermarket['name'],
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                Container(
-                                  color: Colors.black.withOpacity(0.6),
-                                  child: Align(
-                                    alignment: Alignment.center,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          supermarket['name'],
-                                          style: const TextStyle(
-                                              fontSize: 18,  // Increased font size
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          supermarket['location'],
-                                          style: TextStyle(
-                                              fontSize: 16,  // Increased font size
-                                              color: Colors.grey[300]
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            // Navigate to the supermarket slug or detail page
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => SupermarketDetailPage(supermarket: supermarket),
-                                              ),
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.lightBlue[100],  // Light blue button
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8.0),
-                                            ),
-                                          ),
-                                          child: Text('Visit Store'),
-                                        ),
-                                      ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  supermarket['location'],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[700],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => SupermarketDetailPage(supermarket: supermarket),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.purple, // Button color
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Visit Store',
+                                    style: TextStyle(
+                                      color: Colors.black
                                     ),
                                   ),
                                 ),
@@ -682,7 +681,7 @@ class ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        'This is the Profile Screen!',
+        'Profile Screen',
         style: TextStyle(fontSize: 18),
       ),
     );

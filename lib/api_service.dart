@@ -10,7 +10,7 @@ final TextEditingController phoneController = TextEditingController();
 final TextEditingController addressController = TextEditingController();
 final TextEditingController cityController = TextEditingController();
 
-// Text Editing Controller for grocery list (user inputs items here)
+// Text Editing Controller for grocery list
 final TextEditingController groceryListController = TextEditingController();
 
 class ApiService {

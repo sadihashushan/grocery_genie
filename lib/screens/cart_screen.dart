@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home.dart';
 import 'checkout_screen.dart';
 
-// Define a cart item model (optional but recommended for structure)
+// Cart Item Model
 class CartItem {
   final int supermarketId;
   final String supermarketName;
@@ -18,12 +18,12 @@ class CartItem {
   });
 }
 
-// StateNotifier to manage cart state
+// Cart state
 class CartNotifier extends StateNotifier<List<CartItem>> {
   CartNotifier() : super([]);
 
   void addToCart(int supermarketId, String supermarketName, String supermarketLocation, List<String> groceryList) {
-    // Add a new item to the cart
+    // Add an item to cart
     state = [
       ...state,
       CartItem(
@@ -36,7 +36,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
   }
 
   void removeFromCart(int index) {
-    // Remove an item by index
+    // Remove item
     state = [
       for (int i = 0; i < state.length; i++)
         if (i != index) state[i]
@@ -100,7 +100,7 @@ class CartScreen extends ConsumerWidget {
                       SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: () {
-                          // Navigate to checkout and pass data
+                          // Navigate to checkout
                           Navigator.push(
                             context,
                             MaterialPageRoute(

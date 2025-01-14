@@ -25,7 +25,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       _isLoading = true;
     });
 
-    final userId = 1;
+    final userId = 2;
     final name = _nameController.text.isEmpty ? "Anonymous" : _nameController.text;
     final review = _reviewController.text;
 
