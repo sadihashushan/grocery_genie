@@ -32,16 +32,18 @@ class ApiService {
     }
   }
 
-  Future<String?> register(String name, String email, String password,
-      String passwordConfirmation) async {
+  Future<String?> register(String name, String email, String password, String passwordConfirmation) async {
     final response = await http.post(
       Uri.parse('$baseUrl/register'),
-      body: {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
         'name': name,
         'email': email,
         'password': password,
         'password_confirmation': passwordConfirmation,
-      },
+      }),
     );
 
     if (response.statusCode == 201) {
@@ -158,8 +160,69 @@ class ApiService {
     if (response.statusCode == 201) {
       return null; // Success
     } else {
-      return jsonDecode(response.body)['message']; // Error message
+      return jsonDecode(response.body)['message'];
     }
   }
 
+  Future<String?> loginGenie(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/genie/login'),
+      body: {'email': email, 'password': password},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await storage.write(key: 'token', value: data['token']);
+      return null;
+    } else {
+      final errorData = jsonDecode(response.body);
+      return errorData['message'];
+    }
+  }
+
+  Future<List<dynamic>> fetchOrders(String status) async {
+    final token = await storage.read(key: 'token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/orders?status=$status'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final orders = jsonDecode(response.body) as List;
+      for (var order in orders) {
+        final addressResponse = await http.get(
+          Uri.parse('$baseUrl/addresses/${order['address_id']}'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+        if (addressResponse.statusCode == 200) {
+          order['address'] = jsonDecode(addressResponse.body);
+        }
+      }
+      return orders;
+    } else {
+      throw Exception('Failed to fetch orders');
+    }
+  }
+
+  Future<String?> updateOrderStatus(int orderId, String action) async {
+    final token = await storage.read(key: 'token');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/genie/orders/$orderId/$action'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return null;
+    } else {
+      return jsonDecode(response.body)['message'];
+    }
+  }
 }

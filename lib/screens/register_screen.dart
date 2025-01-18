@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api_service.dart';
 
-// State provider for managing error message
 final errorMessageProvider = StateProvider<String?>((ref) => null);
 
 class RegisterScreen extends ConsumerWidget {
@@ -21,6 +21,11 @@ class RegisterScreen extends ConsumerWidget {
     );
 
     if (error == null) {
+      // Store email and password in SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('email', _emailController.text);
+      await prefs.setString('password', _passwordController.text);
+
       Navigator.pop(context); // Return to Login Screen
     } else {
       ref.read(errorMessageProvider.notifier).state = error;
@@ -32,10 +37,9 @@ class RegisterScreen extends ConsumerWidget {
     final errorMessage = ref.watch(errorMessageProvider);
 
     return Scaffold(
-      backgroundColor: Colors.purple[50], // Soft purple background
+      backgroundColor: Colors.purple[50],
       body: Stack(
         children: [
-          // Banner Image
           Positioned(
             top: 0,
             left: 0,
@@ -46,7 +50,6 @@ class RegisterScreen extends ConsumerWidget {
               height: MediaQuery.of(context).size.height * 0.4,
             ),
           ),
-          // Curved Form
           Positioned.fill(
             top: MediaQuery.of(context).size.height * 0.35,
             child: Container(
@@ -70,33 +73,22 @@ class RegisterScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(height: 20),
-                    // Name Input
-                    CustomTextField(
-                      controller: _nameController,
-                      label: 'Name',
-                    ),
+                    CustomTextField(controller: _nameController, label: 'Name'),
                     SizedBox(height: 16),
-                    // Email Input
-                    CustomTextField(
-                      controller: _emailController,
-                      label: 'Email',
-                    ),
+                    CustomTextField(controller: _emailController, label: 'Email'),
                     SizedBox(height: 16),
-                    // Password Input
                     CustomTextField(
                       controller: _passwordController,
                       label: 'Password',
                       obscureText: true,
                     ),
                     SizedBox(height: 16),
-                    // Confirm Password Input
                     CustomTextField(
                       controller: _passwordConfirmController,
                       label: 'Confirm Password',
                       obscureText: true,
                     ),
                     SizedBox(height: 16),
-                    // Display Error Message
                     if (errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8.0),
@@ -106,15 +98,9 @@ class RegisterScreen extends ConsumerWidget {
                         ),
                       ),
                     SizedBox(height: 16),
-                    // Register Button
                     ElevatedButton(
                       onPressed: () => _register(context, ref),
-                      child: Text(
-                        'Register',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: Text('Register', style: TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
                         padding: EdgeInsets.symmetric(vertical: 12, horizontal: 30),
@@ -125,17 +111,13 @@ class RegisterScreen extends ConsumerWidget {
                       ),
                     ),
                     SizedBox(height: 20),
-                    // Login Link
                     TextButton(
                       onPressed: () {
                         Navigator.pushNamed(context, '/login');
                       },
                       child: Text(
                         "Already have an account? Login",
-                        style: TextStyle(
-                          color: Colors.purple,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -149,18 +131,12 @@ class RegisterScreen extends ConsumerWidget {
   }
 }
 
-// Reusable Text Field Widget
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final bool obscureText;
 
-  const CustomTextField({
-    super.key,
-    required this.controller,
-    required this.label,
-    this.obscureText = false,
-  });
+  const CustomTextField({super.key, required this.controller, required this.label, this.obscureText = false});
 
   @override
   Widget build(BuildContext context) {
@@ -168,9 +144,7 @@ class CustomTextField extends StatelessWidget {
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(
-          color: Colors.purple[300],
-        ),
+        labelStyle: TextStyle(color: Colors.purple[300]),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.purple[200]!),

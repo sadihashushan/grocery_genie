@@ -33,9 +33,25 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('GroceryGenie'),
-        backgroundColor: Colors.purple[200],
+        title: Text(
+          'GroceryGenie',
+          style: TextStyle(
+            fontFamily: 'San Francisco',
+            fontSize: 25,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFB04AE1), Color(0xFF883595)],
+            ),
+          ),
+        ),
         actions: [
           Stack(
             alignment: Alignment.center,
@@ -70,7 +86,10 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: screens[currentIndex],
+      body: Container(
+        color: Colors.white, // Set the body background to white
+        child: screens[currentIndex],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: (index) => ref.read(bottomNavProvider.notifier).state = index,
@@ -294,7 +313,6 @@ class HomeTab extends StatelessWidget {
     );
   }
 }
-
 
 class OrdersTab extends ConsumerWidget {
   @override

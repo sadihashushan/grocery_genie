@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_assignment/screens/cart_screen.dart';
-import 'package:flutter_assignment/screens/checkout_screen.dart';
 import 'package:flutter_assignment/screens/review_screen.dart';
 import 'package:flutter_assignment/screens/success_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Assignment',
       theme: ThemeData(primarySwatch: Colors.purple),
       home: LoginScreen(),

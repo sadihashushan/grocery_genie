@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../api_service.dart';
+import '../genie_screens/genie_login_screen.dart';
 
 void main() {
   runApp(ProviderScope(child: MyApp()));
@@ -18,14 +20,31 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class LoginScreen extends ConsumerWidget {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
+class LoginScreen extends ConsumerStatefulWidget {
   LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _emailController.text = prefs.getString('email') ?? '';
+    _passwordController.text = prefs.getString('password') ?? '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final errorMessage = ref.watch(errorProvider);
 
     return Scaffold(
@@ -47,7 +66,6 @@ class LoginScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.35),
-                  // Login form
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -68,7 +86,7 @@ class LoginScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        SizedBox(height: 20),
+                        SizedBox(height: 15),
                         Text(
                           'Welcome Back!',
                           style: TextStyle(
@@ -77,7 +95,7 @@ class LoginScreen extends ConsumerWidget {
                             color: Colors.purple[700],
                           ),
                         ),
-                        SizedBox(height: 25),
+                        SizedBox(height: 20),
                         Text(
                           'Please login to continue',
                           style: TextStyle(
@@ -85,12 +103,9 @@ class LoginScreen extends ConsumerWidget {
                             color: Colors.grey[600],
                           ),
                         ),
-                        SizedBox(height: 30),
-                        CustomTextField(
-                          controller: _emailController,
-                          label: 'Email',
-                        ),
-                        SizedBox(height: 25),
+                        SizedBox(height: 20),
+                        CustomTextField(controller: _emailController, label: 'Email'),
+                        SizedBox(height: 20),
                         CustomTextField(
                           controller: _passwordController,
                           label: 'Password',
@@ -104,7 +119,7 @@ class LoginScreen extends ConsumerWidget {
                               style: TextStyle(color: Colors.red),
                             ),
                           ),
-                        SizedBox(height: 30),
+                        SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: () {
                             ref.read(authProvider.notifier).login(
@@ -115,33 +130,23 @@ class LoginScreen extends ConsumerWidget {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purple,
-                            padding: EdgeInsets.symmetric(vertical: 12),
+                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 30),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: Text(
-                            'Login',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: Text('Login', style: TextStyle(fontSize: 18, color: Colors.white)),
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 15),
                         Center(
                           child: TextButton(
                             onPressed: () {
                               Navigator.pushNamed(context, '/register');
                             },
-                            child: Text(
-                              "Don't have an account? Sign Up",
-                              style: TextStyle(color: Colors.purple),
-                            ),
+                            child: Text("Don't have an account? Sign Up", style: TextStyle(color: Colors.purple)),
                           ),
                         ),
-                        SizedBox(height: 35),
+                        SizedBox(height: 20),
                         Row(
                           children: [
                             Expanded(child: Divider(thickness: 1)),
@@ -152,7 +157,7 @@ class LoginScreen extends ConsumerWidget {
                             Expanded(child: Divider(thickness: 1)),
                           ],
                         ),
-                        SizedBox(height: 30),
+                        SizedBox(height: 20),
                         OutlinedButton.icon(
                           onPressed: () async {
                             final googleSignIn = GoogleSignIn();
@@ -165,10 +170,7 @@ class LoginScreen extends ConsumerWidget {
                             }
                           },
                           icon: Icon(Icons.g_mobiledata, color: Colors.purple),
-                          label: Text(
-                            'Sign Up with Google',
-                            style: TextStyle(color: Colors.purple),
-                          ),
+                          label: Text('Sign Up with Google', style: TextStyle(color: Colors.purple, fontSize: 18)),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: Colors.purple),
                             padding: EdgeInsets.symmetric(vertical: 15, horizontal: 12),
@@ -177,6 +179,23 @@ class LoginScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
+                        SizedBox(height: 20),
+                        ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => GenieLoginScreen()),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                                side: BorderSide(color: Colors.purple),
+                                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 27),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)
+                                )
+                            ),
+                            child: Text('Login as a Genie', style: TextStyle(fontSize: 18, color: Colors.purple))
+                        )
                       ],
                     ),
                   ),
@@ -195,12 +214,7 @@ class CustomTextField extends StatelessWidget {
   final String label;
   final bool obscureText;
 
-  const CustomTextField({
-    super.key,
-    required this.controller,
-    required this.label,
-    this.obscureText = false,
-  });
+  const CustomTextField({super.key, required this.controller, required this.label, this.obscureText = false});
 
   @override
   Widget build(BuildContext context) {
