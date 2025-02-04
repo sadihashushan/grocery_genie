@@ -86,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        SizedBox(height: 15),
+                        SizedBox(height: 20),
                         Text(
                           'Welcome Back!',
                           style: TextStyle(
@@ -95,7 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: Colors.purple[700],
                           ),
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 25),
                         Text(
                           'Please login to continue',
                           style: TextStyle(

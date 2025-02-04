@@ -21,7 +21,6 @@ class RegisterScreen extends ConsumerWidget {
     );
 
     if (error == null) {
-      // Store email and password in SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('email', _emailController.text);
       await prefs.setString('password', _passwordController.text);

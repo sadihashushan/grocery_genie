@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_assignment/api_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 
-class CheckoutScreen extends StatelessWidget {
+class CheckoutScreen extends StatefulWidget {
   final int supermarketId;
   final List<String> orderItems;
 
   CheckoutScreen({required this.supermarketId, required this.orderItems});
 
+  @override
+  _CheckoutScreenState createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
@@ -14,7 +23,59 @@ class CheckoutScreen extends StatelessWidget {
   final addressController = TextEditingController();
   final cityController = TextEditingController();
   final notesController = TextEditingController();
-  String paymentMethod = 'cod'; // Default: Cash on Delivery
+  String paymentMethod = 'cod'; // Default
+  bool _isLoading = false;
+
+  Future<void> _pickContact() async {
+    PermissionStatus permission = await Permission.contacts.request();
+
+    if (permission.isGranted) {
+      List<Contact> contacts = await FlutterContacts.getContacts(
+        withProperties: true, // Needed to fetch phone numbers
+      );
+
+      if (contacts.isNotEmpty) {
+        Contact? selectedContact = await showDialog<Contact>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Select a Contact'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 300,
+              child: ListView(
+                children: contacts.map((contact) {
+                  return ListTile(
+                    title: Text(contact.displayName ?? 'Unknown'),
+                    subtitle: contact.phones.isNotEmpty
+                        ? Text(contact.phones.first.number) // Changed from value to number
+                        : Text('No phone number'),
+                    onTap: () => Navigator.pop(context, contact),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        );
+
+        if (selectedContact != null) {
+          setState(() {
+            firstNameController.text = selectedContact.name.first; // Changed from givenName
+            phoneController.text = selectedContact.phones.isNotEmpty
+                ? selectedContact.phones.first.number // Changed from value to number
+                : '';
+          });
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No contacts found')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Permission denied')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +109,22 @@ class CheckoutScreen extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _pickContact,
+                        icon: Icon(Icons.contacts, color: Colors.white),
+                        label: Text('Book for a Friend'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple[400],
+                          textStyle: TextStyle(
+                            color: Colors.white
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
                       _buildTextField(
                         controller: firstNameController,
                         label: 'First Name',
@@ -69,28 +146,55 @@ class CheckoutScreen extends StatelessWidget {
                         validator: (value) => value!.isEmpty ? 'Required' : null,
                       ),
                       SizedBox(height: 12),
-                      _buildTextField(
-                        controller: addressController,
-                        label: 'Street Address',
-                        icon: Icons.home,
-                        validator: (value) => value!.isEmpty ? 'Required' : null,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              controller: addressController,
+                              label: 'Street Address',
+                              icon: Icons.home,
+                              validator: (value) => value!.isEmpty ? 'Required' : null,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.my_location, color: Colors.purple),
+                            onPressed: _fetchLocation,
+                          ),
+                        ],
                       ),
                       SizedBox(height: 12),
-                      _buildTextField(
-                        controller: cityController,
-                        label: 'City',
-                        icon: Icons.location_city,
-                        validator: (value) => value!.isEmpty ? 'Required' : null,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              controller: cityController,
+                              label: 'City',
+                              icon: Icons.location_city,
+                              validator: (value) => value!.isEmpty ? 'Required' : null,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.my_location, color: Colors.purple),
+                            onPressed: _fetchLocation,
+                          ),
+                        ],
                       ),
                       SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         value: paymentMethod,
                         items: [
                           DropdownMenuItem(
-                              value: 'cod', child: Text('Cash on Delivery')),
-                          DropdownMenuItem(value: 'card', child: Text('Card')),
+                            value: 'cod',
+                            child: Text('Cash on Delivery'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'card',
+                            child: Text('Card'),
+                          ),
                         ],
-                        onChanged: (value) => paymentMethod = value!,
+                        onChanged: (value) => setState(() {
+                          paymentMethod = value!;
+                        }),
                         decoration: InputDecoration(
                           labelText: 'Payment Method',
                           border: OutlineInputBorder(
@@ -107,36 +211,7 @@ class CheckoutScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            final apiService = ApiService();
-                            final error = await apiService.createOrder(
-                              userId: 2,
-                              supermarketId: supermarketId,
-                              orderItems: orderItems,
-                              paymentMethod: paymentMethod,
-                              paymentStatus: 'pending',
-                              firstName: firstNameController.text,
-                              lastName: lastNameController.text,
-                              phone: phoneController.text,
-                              streetAddress: addressController.text,
-                              city: cityController.text,
-                              notes: notesController.text,
-                            );
-
-                            if (error == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text('Order created successfully!')),
-                              );
-                              Navigator.pop(context); // Go back to cart
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $error')),
-                              );
-                            }
-                          }
-                        },
+                        onPressed: _isLoading ? null : _placeOrder,
                         style: ElevatedButton.styleFrom(
                           padding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                           backgroundColor: Colors.purple[400],
@@ -144,12 +219,11 @@ class CheckoutScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text(
+                        child: _isLoading
+                            ? CircularProgressIndicator(color: Colors.white)
+                            : Text(
                           'Place Order',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black
-                          ),
+                          style: TextStyle(fontSize: 16, color: Colors.black),
                         ),
                       ),
                     ],
@@ -180,5 +254,70 @@ class CheckoutScreen extends StatelessWidget {
       ),
       validator: validator,
     );
+  }
+
+  Future<void> _fetchLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enable location services')),
+      );
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Location permission denied')),
+        );
+        return;
+      }
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    List<Placemark> placemarks = await placemarkFromCoordinates(
+      position.latitude,
+      position.longitude,
+    );
+
+    if (placemarks.isNotEmpty) {
+      Placemark place = placemarks.first;
+      setState(() {
+        addressController.text = place.street ?? 'Unknown';
+        cityController.text = place.locality ?? 'Unknown';
+      });
+    }
+  }
+
+  Future<void> _placeOrder() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
+      final apiService = ApiService();
+      final error = await apiService.createOrder(
+        userId: 3,
+        supermarketId: widget.supermarketId,
+        orderItems: widget.orderItems,
+        paymentMethod: paymentMethod,
+        paymentStatus: 'pending',
+        firstName: firstNameController.text,
+        lastName: lastNameController.text,
+        phone: phoneController.text,
+        streetAddress: addressController.text,
+        city: cityController.text,
+        notes: notesController.text,
+      );
+
+      setState(() => _isLoading = false);
+
+      if (error == null) {
+        Navigator.pop(context);
+      }
+    }
   }
 }

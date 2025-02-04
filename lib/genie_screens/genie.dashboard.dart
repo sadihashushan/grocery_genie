@@ -30,7 +30,20 @@ class _GenieDashboardState extends ConsumerState<GenieDashboard> {
 
     final apiService = ApiService();
     try {
-      final orders = await apiService.fetchOrders(_selectedTab);
+      List<dynamic> orders;
+      switch (_selectedTab) {
+        case 'new-orders':
+          orders = await apiService.fetchNewOrders();
+          break;
+        case 'ongoing-orders':
+          orders = await apiService.fetchOngoingOrders();
+          break;
+        case 'completed-orders':
+          orders = await apiService.fetchCompletedOrders();
+          break;
+        default:
+          throw Exception('Invalid tab selected');
+      }
       setState(() {
         _orders = orders;
       });

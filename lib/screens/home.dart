@@ -1,16 +1,16 @@
+import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
-import '../api_service.dart';
+import '../providers/orders_provider.dart';
+import '../providers/connectivity_provider.dart';
 import 'cart_screen.dart';
 
 final bottomNavProvider = StateProvider<int>((ref) => 0);
-final ordersProvider = FutureProvider<List<dynamic>>((ref) async {
-  final apiService = ApiService();
-  return apiService.fetchOrdersForUser();
-});
 final cartProvider = StateNotifierProvider<CartNotifier, List<CartItem>>((ref) {
   return CartNotifier();
 });
@@ -28,8 +28,8 @@ class HomeScreen extends ConsumerWidget {
       ProfileTab(storage: storage),
     ];
 
-    // Count of cart items
     final cartItemCount = ref.watch(cartProvider).length;
+    final isConnected = ref.watch(connectivityProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -86,9 +86,35 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Container(
-        color: Colors.white, // Set the body background to white
-        child: screens[currentIndex],
+      body: Stack(
+        children: [
+          Container(
+            color: Colors.white,
+            child: screens[currentIndex],
+          ),
+          if (!isConnected)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                padding: EdgeInsets.all(10),
+                color: Colors.red,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.wifi_off, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'No Internet Connection',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
@@ -269,7 +295,7 @@ class HomeTab extends StatelessWidget {
     ];
 
     return Card(
-      color: Colors.white,
+      color: Colors.deepPurple[100],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -314,9 +340,16 @@ class HomeTab extends StatelessWidget {
   }
 }
 
-class OrdersTab extends ConsumerWidget {
+class OrdersTab extends ConsumerStatefulWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  _OrdersTabState createState() => _OrdersTabState();
+}
+
+class _OrdersTabState extends ConsumerState<OrdersTab> {
+  int? _expandedIndex; // Index of the currently expanded order card
+
+  @override
+  Widget build(BuildContext context) {
     final ordersAsyncValue = ref.watch(ordersProvider);
 
     return Scaffold(
@@ -329,12 +362,24 @@ class OrdersTab extends ConsumerWidget {
           if (orders.isEmpty) {
             return Center(child: Text('No orders found.'));
           }
-
           return ListView.builder(
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index];
-              return OrderCard(order: order);
+              return OrderCard(
+                order: order,
+                isExpanded: _expandedIndex == index,
+                onTap: () {
+                  setState(() {
+                    // If tapping the currently expanded card, collapse it
+                    if (_expandedIndex == index) {
+                      _expandedIndex = null;
+                    } else {
+                      _expandedIndex = index;
+                    }
+                  });
+                },
+              );
             },
           );
         },
@@ -347,8 +392,14 @@ class OrdersTab extends ConsumerWidget {
 
 class OrderCard extends StatelessWidget {
   final Map<String, dynamic> order;
+  final bool isExpanded;
+  final VoidCallback onTap;
 
-  OrderCard({required this.order});
+  OrderCard({
+    required this.order,
+    required this.isExpanded,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,224 +412,326 @@ class OrderCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.store, color: Colors.purple),
-                SizedBox(width: 8),
-                Text(
-                  'Supermarket: ${supermarket != null ? (supermarket['name'] ?? 'N/A') : 'N/A'}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Always show summary: supermarket name and items
+              Row(
+                children: [
+                  Icon(Icons.store, color: Colors.purple),
+                  SizedBox(width: 8),
+                  Text(
+                    'Supermarket: ${supermarket != null ? (supermarket['name'] ?? 'N/A') : 'N/A'}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.calendar_today, color: Colors.purple),
-                SizedBox(width: 8),
-                Text(
-                  'Date: ${order['created_at'] ?? 'N/A'}',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.list, color: Colors.purple),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    // Handle both String and List cases
-                    'Items: ${items is List ? items.join(', ') : items}',
-                    style: TextStyle(fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
+                ],
+              ),
+              SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.list, color: Colors.purple),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Items: ${items is List ? items.join(', ') : items}',
+                      style: TextStyle(fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                ],
+              ),
+              // If expanded, show additional details
+              if (isExpanded) ...[
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: Colors.purple),
+                    SizedBox(width: 8),
+                    Text(
+                      'Date: ${order['created_at'] ?? 'N/A'}',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  order['status'] == 'completed'
-                      ? Icons.check_circle
-                      : Icons.pending,
-                  color: order['status'] == 'completed' ? Colors.green : Colors.orange,
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      order['status'] == 'completed'
+                          ? Icons.check_circle
+                          : Icons.pending,
+                      color: order['status'] == 'completed'
+                          ? Colors.green
+                          : Colors.orange,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Status: ${order['status'] ?? 'Unknown'}',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 8),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      order['payment_status'] == 'paid'
+                          ? Icons.payment
+                          : Icons.error,
+                      color: order['payment_status'] == 'paid'
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Payment: ${order['payment_status'] ?? 'Unknown'}',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                // You can add any additional details here (for example, customer details)
                 Text(
-                  'Status: ${order['status'] ?? 'Unknown'}',
+                  'Customer: ${order['address'] != null ? "${order['address']['first_name']} ${order['address']['last_name']}" : 'N/A'}',
+                  style: TextStyle(fontSize: 14),
+                ),
+                Text(
+                  'Address: ${order['address'] != null ? "${order['address']['street_address']}, ${order['address']['city']}" : 'N/A'}',
+                  style: TextStyle(fontSize: 14),
+                ),
+                Text(
+                  'Phone: ${order['address'] != null ? order['address']['phone'] : 'N/A'}',
                   style: TextStyle(fontSize: 14),
                 ),
               ],
-            ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  order['payment_status'] == 'paid'
-                      ? Icons.payment
-                      : Icons.error,
-                  color: order['payment_status'] == 'paid'
-                      ? Colors.green
-                      : Colors.red,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Payment: ${order['payment_status'] ?? 'Unknown'}',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+class SupermarketsTab extends StatefulWidget {
+  @override
+  _SupermarketsTabState createState() => _SupermarketsTabState();
+}
 
-class SupermarketsTab extends StatelessWidget {
+class _SupermarketsTabState extends State<SupermarketsTab> {
+  late Future<List<dynamic>> _supermarketsFuture;
+  List<dynamic> _supermarkets = [];
+  List<dynamic> _filteredSupermarkets = [];
+  TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _supermarketsFuture = fetchSupermarkets();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<List<dynamic>> fetchSupermarkets() async {
-    final response = await http.get(Uri.parse('http://10.0.2.2:8000/api/supermarkets'));
+    final response =
+    await http.get(Uri.parse('https://grocerygenie.xyz/api/supermarkets'));
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      final data = json.decode(response.body);
+      setState(() {
+        _supermarkets = data;
+        _filteredSupermarkets = data;
+      });
+      return data;
     } else {
       throw Exception('Failed to load supermarkets');
     }
   }
 
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredSupermarkets = _supermarkets.where((supermarket) {
+        return supermarket['name'].toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<dynamic>>(
-      future: fetchSupermarkets(),
+      future: _supermarketsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else {
-          final supermarkets = snapshot.data!;
           return Scaffold(
-            body: Column(
+            backgroundColor: Colors.purple[50],
+            body: Stack(
               children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      height: 175,
-                      child: Image.asset(
-                        'images/supermarket.jpeg',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 175,
-                      color: Colors.black.withOpacity(0.3),
-                    ),
-                    Positioned.fill(
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Supermarkets',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
+                // Top image
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Image.asset(
+                    'images/delivery-man.jpg',
+                    fit: BoxFit.cover,
+                    height: MediaQuery.of(context).size.height * 0.3,
+                  ),
                 ),
-                Expanded(
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(16.0),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16.0,
-                      mainAxisSpacing: 16.0,
-                      childAspectRatio: 1.0,
+                // Curved container with content
+                Positioned(
+                  top: MediaQuery.of(context).size.height * 0.2,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(40),
+                        topRight: Radius.circular(40),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: Offset(0, -5),
+                        ),
+                      ],
                     ),
-                    itemCount: supermarkets.length,
-                    itemBuilder: (context, index) {
-                      final supermarket = supermarkets[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SupermarketDetailPage(supermarket: supermarket),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title
+                          Text(
+                            'Supermarket',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
-                          );
-                        },
-                        child: Card(
-                          elevation: 8.0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-                          color: Colors.purple[100], // Solid light purple color
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  supermarket['name'],
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  supermarket['location'],
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[700],
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () {
+                          ),
+                          const SizedBox(height: 16),
+                          // Search Bar
+                          TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Search supermarkets...',
+                              prefixIcon: Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Expanded GridView
+                          Expanded(
+                            child: GridView.builder(
+                              padding: const EdgeInsets.all(8.0),
+                              gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16.0,
+                                mainAxisSpacing: 16.0,
+                                childAspectRatio: 1.0,
+                              ),
+                              itemCount: _filteredSupermarkets.length,
+                              itemBuilder: (context, index) {
+                                final supermarket = _filteredSupermarkets[index];
+                                return GestureDetector(
+                                  onTap: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => SupermarketDetailPage(supermarket: supermarket),
+                                        builder: (context) =>
+                                            SupermarketDetailPage(
+                                                supermarket: supermarket),
                                       ),
                                     );
                                   },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.purple, // Button color
+                                  child: Card(
+                                    elevation: 4.0,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8.0),
+                                      borderRadius: BorderRadius.circular(16.0),
+                                    ),
+                                    color: Colors.deepPurple[100],
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            supermarket['name'],
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            supermarket['location'],
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.grey[700],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      SupermarketDetailPage(
+                                                          supermarket:
+                                                          supermarket),
+                                                ),
+                                              );
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                              Colors.purple[200],
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                BorderRadius.circular(8.0),
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              'Visit Store',
+                                              style:
+                                              TextStyle(color: Colors.black),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  child: const Text(
-                                    'Visit Store',
-                                    style: TextStyle(
-                                      color: Colors.black
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -690,17 +843,112 @@ class SupermarketDetailPage extends ConsumerWidget {
   }
 }
 
-class ProfileTab extends StatelessWidget {
+class ProfileTab extends StatefulWidget {
   final FlutterSecureStorage storage;
 
   ProfileTab({required this.storage});
 
   @override
+  _ProfileTabState createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<ProfileTab> {
+  String? name;
+  String? email;
+  String? _profileImagePath;
+  bool _isLoading = true;
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+  }
+
+  Future<void> loadUserData() async {
+    name = await widget.storage.read(key: 'user_name');
+    email = await widget.storage.read(key: 'user_email');
+    _profileImagePath = await widget.storage.read(key: 'profile_image');
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      await widget.storage.write(key: 'profile_image', value: image.path);
+      setState(() {
+        _profileImagePath = image.path;
+      });
+    }
+  }
+
+  Future<void> _logout() async {
+    await widget.storage.deleteAll();
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Profile Screen',
-        style: TextStyle(fontSize: 18),
+    return _isLoading
+        ? Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            SizedBox(height: 20),
+            GestureDetector(
+              onTap: _pickImage,
+              child: CircleAvatar(
+                radius: 50,
+                backgroundImage: _profileImagePath != null
+                    ? FileImage(File(_profileImagePath!))
+                    : AssetImage('images/profile_placeholder.png') as ImageProvider,
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    radius: 18,
+                    child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(name ?? '', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text(email ?? '', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+            SizedBox(height: 24),
+            _buildProfileOption(Icons.person, 'Edit Profile'),
+            _buildProfileOption(Icons.settings, 'Settings'),
+            _buildProfileOption(Icons.help_outline, 'Help & Support'),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _logout,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: EdgeInsets.symmetric(vertical: 14, horizontal: 40),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Logout', style: TextStyle(fontSize: 18, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileOption(IconData icon, String title) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(title),
+        trailing: Icon(Icons.arrow_forward_ios),
+        onTap: () {},
       ),
     );
   }
