@@ -35,6 +35,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+    _resetUserData();
+  }
+
+  Future<void> _resetUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('email');
+    await prefs.remove('password');
+    _emailController.clear();
+    _passwordController.clear();
   }
 
   void _loadUserData() async {
@@ -86,7 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        SizedBox(height: 20),
+                        SizedBox(height: 25),
                         Text(
                           'Welcome Back!',
                           style: TextStyle(
@@ -95,7 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: Colors.purple[700],
                           ),
                         ),
-                        SizedBox(height: 25),
+                        SizedBox(height: 30),
                         Text(
                           'Please login to continue',
                           style: TextStyle(
@@ -103,9 +112,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: Colors.grey[600],
                           ),
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 30),
                         CustomTextField(controller: _emailController, label: 'Email'),
-                        SizedBox(height: 20),
+                        SizedBox(height: 30),
                         CustomTextField(
                           controller: _passwordController,
                           label: 'Password',
@@ -119,7 +128,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               style: TextStyle(color: Colors.red),
                             ),
                           ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 25),
                         ElevatedButton(
                           onPressed: () {
                             ref.read(authProvider.notifier).login(
@@ -137,7 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           child: Text('Login', style: TextStyle(fontSize: 18, color: Colors.white)),
                         ),
-                        SizedBox(height: 15),
+                        SizedBox(height: 20),
                         Center(
                           child: TextButton(
                             onPressed: () {
@@ -146,40 +155,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             child: Text("Don't have an account? Sign Up", style: TextStyle(color: Colors.purple)),
                           ),
                         ),
-                        SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(child: Divider(thickness: 1)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text('OR'),
-                            ),
-                            Expanded(child: Divider(thickness: 1)),
-                          ],
-                        ),
-                        SizedBox(height: 20),
-                        OutlinedButton.icon(
+                        SizedBox(height: 25),
+                        ElevatedButton(
                           onPressed: () async {
-                            final googleSignIn = GoogleSignIn();
-                            try {
-                              await googleSignIn.signIn();
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text('Google Sign-In failed: $e'),
-                              ));
-                            }
+                            SharedPreferences prefs = await SharedPreferences.getInstance();
+                            String email = prefs.getString('email') ?? '';
+                            String password = prefs.getString('password') ?? '';
+
+                            // Fill the text fields with saved data
+                            _emailController.text = email;
+                            _passwordController.text = password;
                           },
-                          icon: Icon(Icons.g_mobiledata, color: Colors.purple),
-                          label: Text('Sign Up with Google', style: TextStyle(color: Colors.purple, fontSize: 18)),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.purple),
-                            padding: EdgeInsets.symmetric(vertical: 15, horizontal: 12),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purple,
+                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 30),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
+                          child: Text('Auto-Fill Credentials', style: TextStyle(fontSize: 18, color: Colors.white)),
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 25),
                         ElevatedButton(
                             onPressed: () {
                               Navigator.pushReplacement(

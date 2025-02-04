@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_assignment/api_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ReviewScreen extends StatefulWidget {
   const ReviewScreen({super.key});
@@ -11,26 +12,42 @@ class ReviewScreen extends StatefulWidget {
 class _ReviewScreenState extends State<ReviewScreen> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   final _nameController = TextEditingController();
   final _reviewController = TextEditingController();
   int _starCount = 5;
+  int? _userId; // User ID from secure storage
 
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId(); // Load user ID when the screen initializes
+  }
+
+  Future<void> _loadUserId() async {
+    String? storedUserId = await _storage.read(key: 'user_id');
+    if (storedUserId != null) {
+      setState(() {
+        _userId = int.tryParse(storedUserId);
+      });
+    }
+  }
+
   Future<void> _submitReview() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || _userId == null) return;
 
     setState(() {
       _isLoading = true;
     });
 
-    final userId = 2;
     final name = _nameController.text.isEmpty ? "Anonymous" : _nameController.text;
     final review = _reviewController.text;
 
     final error = await _apiService.submitReview(
-      userId: userId,
+      userId: _userId!, // Use the retrieved user ID
       name: name,
       review: review,
       starCount: _starCount,
@@ -44,15 +61,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Success'),
-          content: Text('Your review has been submitted!'),
+          title: const Text('Success'),
+          content: const Text('Your review has been submitted!'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context); // Close dialog
                 Navigator.pop(context); // Go back to previous screen
               },
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         ),
@@ -61,12 +78,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Error'),
+          title: const Text('Error'),
           content: Text(error),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         ),
@@ -78,7 +95,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add a Review'),
+        title: const Text('Add a Review'),
         backgroundColor: Colors.purple[200],
         elevation: 0,
       ),
@@ -87,7 +104,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
             child: Container(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -96,7 +113,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     color: Colors.black.withOpacity(0.1),
                     spreadRadius: 5,
                     blurRadius: 10,
-                    offset: Offset(0, 5),
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
@@ -125,7 +142,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       textInputAction: TextInputAction.next,
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Review field
                     TextFormField(
@@ -154,7 +171,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       },
                     ),
 
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
                     // Star rating
                     Text(
@@ -182,11 +199,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       }),
                     ),
 
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
                     // Submit button
                     _isLoading
-                        ? Center(child: CircularProgressIndicator())
+                        ? const Center(child: CircularProgressIndicator())
                         : ElevatedButton(
                       onPressed: _submitReview,
                       style: ElevatedButton.styleFrom(
@@ -194,9 +211,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Submit Review',
                         style: TextStyle(
                           fontSize: 16,

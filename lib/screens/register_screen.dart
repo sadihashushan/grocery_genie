@@ -66,60 +66,62 @@ class RegisterScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(height: 20),
-                    CustomTextField(controller: _nameController, label: 'Name'),
-                    SizedBox(height: 16),
-                    CustomTextField(controller: _emailController, label: 'Email'),
-                    SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _passwordController,
-                      label: 'Password',
-                      obscureText: true,
-                    ),
-                    SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _passwordConfirmController,
-                      label: 'Confirm Password',
-                      obscureText: true,
-                    ),
-                    SizedBox(height: 16),
-                    if (errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
+              child: SingleChildScrollView( // Added SingleChildScrollView
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(height: 20),
+                      CustomTextField(controller: _nameController, label: 'Name'),
+                      SizedBox(height: 16),
+                      CustomTextField(controller: _emailController, label: 'Email'),
+                      SizedBox(height: 16),
+                      CustomTextField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        obscureText: true,
+                      ),
+                      SizedBox(height: 16),
+                      CustomTextField(
+                        controller: _passwordConfirmController,
+                        label: 'Confirm Password',
+                        obscureText: true,
+                      ),
+                      SizedBox(height: 16),
+                      if (errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            errorMessage,
+                            style: TextStyle(color: Colors.red, fontSize: 14),
+                          ),
+                        ),
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => _register(context, ref),
+                        child: Text('Register', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple,
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 30),
+                          textStyle: TextStyle(fontSize: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/login');
+                        },
                         child: Text(
-                          errorMessage,
-                          style: TextStyle(color: Colors.red, fontSize: 14),
+                          "Already have an account? Login",
+                          style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold),
                         ),
                       ),
-                    SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _register(context, ref),
-                      child: Text('Register', style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 30),
-                        textStyle: TextStyle(fontSize: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/login');
-                      },
-                      child: Text(
-                        "Already have an account? Login",
-                        style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
