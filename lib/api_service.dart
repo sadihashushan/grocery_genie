@@ -293,4 +293,22 @@ class ApiService {
       return jsonDecode(response.body)['message'];
     }
   }
+
+  Future<void> logoutGenie() async {
+    final token = await storage.read(key: 'token');
+    if (token == null) return;
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/genie/logout'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      await storage.delete(key: 'token'); // Remove stored token
+    }
+  }
 }

@@ -94,6 +94,20 @@ class _GenieDashboardState extends ConsumerState<GenieDashboard> {
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: () async {
+              final apiService = ApiService();
+              await apiService.logoutGenie();
+
+              // Login screen
+              if (mounted) {
+                Navigator.pushReplacementNamed(context, '/login');
+              }
+            },
+          ),
+        ],
       ),
       drawer: _buildDrawer(),
       body: _isLoading

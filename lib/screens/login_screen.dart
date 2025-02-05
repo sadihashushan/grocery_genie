@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../api_service.dart';
 import '../genie_screens/genie_login_screen.dart';
 
@@ -184,13 +183,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                                side: BorderSide(color: Colors.purple),
+                                backgroundColor: Colors.purple,
                                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 27),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)
                                 )
                             ),
-                            child: Text('Login as a Genie', style: TextStyle(fontSize: 18, color: Colors.purple))
+                            child: Text('Login as a Genie', style: TextStyle(fontSize: 18, color: Colors.white))
                         )
                       ],
                     ),

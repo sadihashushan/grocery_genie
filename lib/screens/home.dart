@@ -20,6 +20,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final currentIndex = ref.watch(bottomNavProvider);
     final screens = [
       HomeTab(),
@@ -42,10 +43,16 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: isDarkMode ? Colors.black : Colors.transparent,
         flexibleSpace: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
+            gradient: isDarkMode
+                ? LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.black87, Colors.black54],
+            )
+                : LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [Color(0xFFB04AE1), Color(0xFF883595)],
@@ -89,7 +96,7 @@ class HomeScreen extends ConsumerWidget {
       body: Stack(
         children: [
           Container(
-            color: Colors.white,
+            color: isDarkMode ? Colors.black : Colors.white,
             child: screens[currentIndex],
           ),
           if (!isConnected)
@@ -125,8 +132,9 @@ class HomeScreen extends ConsumerWidget {
           BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Supermarkets'),
           BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Profile'),
         ],
-        selectedItemColor: Colors.purple[300],
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: isDarkMode ? Colors.purpleAccent : Colors.purple[300],
+        unselectedItemColor: isDarkMode ? Colors.grey[400] : Colors.grey,
+        backgroundColor: isDarkMode ? Colors.black : Colors.white,
       ),
     );
   }
@@ -569,16 +577,18 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
 
   @override
   Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+
     return FutureBuilder<List<dynamic>>(
       future: _supermarketsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else {
           return Scaffold(
-            backgroundColor: Colors.purple[50],
+            backgroundColor: theme.scaffoldBackgroundColor,
             body: Stack(
               children: [
                 // Top image
@@ -592,7 +602,6 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                     height: MediaQuery.of(context).size.height * 0.3,
                   ),
                 ),
-                // Curved container with content
                 Positioned(
                   top: MediaQuery.of(context).size.height * 0.2,
                   left: 0,
@@ -600,8 +609,8 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                   bottom: 0,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
+                      color: theme.cardColor,
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(40),
                         topRight: Radius.circular(40),
                       ),
@@ -609,7 +618,7 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 10,
-                          offset: Offset(0, -5),
+                          offset: const Offset(0, -5),
                         ),
                       ],
                     ),
@@ -621,11 +630,7 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                           // Title
                           Text(
                             'Supermarket',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
+                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 16),
                           // Search Bar
@@ -633,7 +638,9 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                             controller: _searchController,
                             decoration: InputDecoration(
                               hintText: 'Search supermarkets...',
-                              prefixIcon: Icon(Icons.search),
+                              prefixIcon: Icon(Icons.search, color: theme.iconTheme.color),
+                              filled: true,
+                              fillColor: theme.inputDecorationTheme.fillColor ?? Colors.grey[200],
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
@@ -644,8 +651,7 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                           Expanded(
                             child: GridView.builder(
                               padding: const EdgeInsets.all(8.0),
-                              gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 16.0,
                                 mainAxisSpacing: 16.0,
@@ -659,9 +665,7 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) =>
-                                            SupermarketDetailPage(
-                                                supermarket: supermarket),
+                                        builder: (context) => SupermarketDetailPage(supermarket: supermarket),
                                       ),
                                     );
                                   },
@@ -678,20 +682,13 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                                         children: [
                                           Text(
                                             supermarket['name'],
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                            ),
+                                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                                             textAlign: TextAlign.center,
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
                                             supermarket['location'],
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.grey[700],
-                                            ),
+                                            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
                                             textAlign: TextAlign.center,
                                           ),
                                           const SizedBox(height: 16),
@@ -700,25 +697,19 @@ class _SupermarketsTabState extends State<SupermarketsTab> {
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      SupermarketDetailPage(
-                                                          supermarket:
-                                                          supermarket),
+                                                  builder: (context) => SupermarketDetailPage(supermarket: supermarket),
                                                 ),
                                               );
                                             },
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                              Colors.purple[200],
+                                              backgroundColor: theme.colorScheme.primary,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                BorderRadius.circular(8.0),
+                                                borderRadius: BorderRadius.circular(8.0),
                                               ),
                                             ),
-                                            child: const Text(
+                                            child: Text(
                                               'Visit Store',
-                                              style:
-                                              TextStyle(color: Colors.black),
+                                              style: TextStyle(color: theme.colorScheme.onPrimary),
                                             ),
                                           ),
                                         ],

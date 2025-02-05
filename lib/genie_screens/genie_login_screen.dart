@@ -14,11 +14,12 @@ class GenieLoginScreen extends ConsumerWidget {
     final errorMessage = ref.watch(errorProvider);
 
     return Scaffold(
+      backgroundColor: Colors.white, // Ensure full white background
       body: GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus();
         },
-        child: Stack(
+        child: Column(
           children: [
             // Background image
             SizedBox(
@@ -31,119 +32,98 @@ class GenieLoginScreen extends ConsumerWidget {
             ),
 
             // Login form container
-            Column(
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.35),
-                Flexible(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(40),
-                        topRight: Radius.circular(40),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          spreadRadius: 5,
-                          blurRadius: 15,
-                          offset: Offset(0, -10),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(height: 15),
+                      Text(
+                        'Welcome, Genie!',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3F51B5),
                         ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(24.0),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min, // Allow column to shrink-wrap
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(height: 15),
-                          Text(
-                            'Welcome, Genie!',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF3F51B5),
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            'Login to access your Genie account',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          SizedBox(height: 20),
-
-                          // Email field
-                          CustomTextField(
-                            controller: _emailController,
-                            label: 'Email',
-                          ),
-                          SizedBox(height: 20),
-
-                          // Password field
-                          CustomTextField(
-                            controller: _passwordController,
-                            label: 'Password',
-                            obscureText: true,
-                          ),
-
-                          // Error message
-                          if (errorMessage.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                errorMessage,
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          SizedBox(height: 20),
-
-                          // Login button
-                          ElevatedButton(
-                            onPressed: () async {
-                              final apiService = ApiService();
-                              final error = await apiService.loginGenie(
-                                _emailController.text,
-                                _passwordController.text,
-                              );
-                              if (error == null) {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => GenieDashboard()),
-                                );
-                              } else {
-                                ref.read(errorProvider.notifier).state = error;
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF3F51B5),
-                              padding: EdgeInsets.symmetric(
-                                vertical: 12,
-                                horizontal: 30,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'Login',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
-                    ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Login to access your Genie account',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(height: 20),
+
+                      // Email field
+                      CustomTextField(
+                        controller: _emailController,
+                        label: 'Email',
+                      ),
+                      SizedBox(height: 20),
+
+                      // Password field
+                      CustomTextField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        obscureText: true,
+                      ),
+
+                      // Error message
+                      if (errorMessage.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            errorMessage,
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      SizedBox(height: 20),
+
+                      // Login button
+                      ElevatedButton(
+                        onPressed: () async {
+                          final apiService = ApiService();
+                          final error = await apiService.loginGenie(
+                            _emailController.text,
+                            _passwordController.text,
+                          );
+                          if (error == null) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => GenieDashboard()),
+                            );
+                          } else {
+                            ref.read(errorProvider.notifier).state = error;
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF3F51B5),
+                          padding: EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 30,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Login',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ],
         ),
